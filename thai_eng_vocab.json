@@ -100,10 +100,6 @@
     "english": "FUTURE"
   },
   {
-    "thai": "กิน",
-    "english": "EAT"
-  },
-  {
     "thai": "ดื่ม",
     "english": "DRINK"
   },
@@ -114,10 +110,6 @@
   {
     "thai": "ตื่น",
     "english": "WAKE_UP"
-  },
-  {
-    "thai": "ไป",
-    "english": "GO"
   },
   {
     "thai": "มา",
@@ -314,10 +306,6 @@
   {
     "thai": "ข้อมูล",
     "english": "DATA"
-  },
-  {
-    "thai": "ข้าว",
-    "english": "RICE"
   },
   {
     "thai": "น้ำ",

@@ -58,8 +58,9 @@ class VocabMapper {
   Future<void> loadVocab({bool forceRefresh = false}) async {
     if (_isLoaded && !forceRefresh) return;
 
-    // โหลดจาก Cloudflare R2
-    final r2Url = '${ApiConstants.cloudflareR2StorageBaseUrl}/gloss_map.json';
+    // โหลดจาก Cloudflare R2 (เพิ่ม timestamp เพื่อป้องกัน browser cache)
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final r2Url = '${ApiConstants.cloudflareR2StorageBaseUrl}/gloss_map.json?t=$timestamp';
     final response = await http.get(Uri.parse(r2Url));
 
     if (response.statusCode != 200) {

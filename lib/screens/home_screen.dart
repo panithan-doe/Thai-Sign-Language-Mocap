@@ -103,6 +103,32 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
+      floatingActionButton: _isInitialized
+          ? FloatingActionButton.extended(
+              onPressed: () async {
+                final result = await Navigator.push<bool>(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const AddWordScreen(),
+                  ),
+                );
+                // Refresh vocab เมื่อมีการเพิ่มคำใหม่สำเร็จ
+                if (result == true && mounted) {
+                  await _vocabMapper.loadVocab(forceRefresh: true);
+                  setState(() {});
+                }
+              },
+              backgroundColor: const Color(0xFF3B82F6),
+              icon: const Icon(Icons.add, color: Colors.white),
+              label: const Text(
+                'เพิ่มคำศัพท์ใหม่',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            )
+          : null,
       body: !_isInitialized
           ? const Center(
               child: Column(
@@ -129,30 +155,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   expandedHeight: 120,
                   floating: false,
                   pinned: true,
-                  actions: [
-                    // ปุ่มเพิ่มคำใหม่
-                    Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: IconButton(
-                        onPressed: () async {
-                          final result = await Navigator.push<bool>(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const AddWordScreen(),
-                            ),
-                          );
-                          // Refresh vocab เมื่อมีการเพิ่มคำใหม่สำเร็จ
-                          if (result == true && mounted) {
-                            await _vocabMapper.loadVocab(forceRefresh: true);
-                            setState(() {});
-                          }
-                        },
-                        icon: const Icon(Icons.add_circle_outline),
-                        color: Colors.white,
-                        tooltip: 'เพิ่มคำใหม่',
-                      ),
-                    ),
-                  ],
                   flexibleSpace: FlexibleSpaceBar(
                     centerTitle: true,
                     title: const Text(

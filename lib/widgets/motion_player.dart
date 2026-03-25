@@ -9,6 +9,8 @@ class MotionPlayer extends StatefulWidget {
   final bool autoPlay;
   final VoidCallback? onComplete;
   final List<List<String>>? thaiGroups; // กลุ่มคำภาษาไทยสำหรับแสดงผล (merged)
+  final List<WordToken>? mergedTokens; // WordToken พร้อม variant สำหรับแสดง gloss
+  final Map<String, dynamic>? glossMap; // gloss_map.json สำหรับดึงบริบท
   final void Function(int clipIndex)? onClipChange; // callback เมื่อเปลี่ยน clip
 
   const MotionPlayer({
@@ -17,6 +19,8 @@ class MotionPlayer extends StatefulWidget {
     this.autoPlay = false,
     this.onComplete,
     this.thaiGroups,
+    this.mergedTokens,
+    this.glossMap,
     this.onClipChange,
   });
 
@@ -56,6 +60,36 @@ class MotionPlayerState extends State<MotionPlayer> {
       return words.join(', ');
     }
     return '';
+  }
+
+  /// ดึงข้อมูล variant และบริบทจาก gloss_map
+  /// เช่น "ผม (v2: เส้นผม)" หรือกรณีไม่มีคำแสดง "STILL"
+  String get _currentVariantDisplay {
+    if (widget.mergedTokens != null && _currentClipIndex < widget.mergedTokens!.length) {
+      final token = widget.mergedTokens![_currentClipIndex];
+
+      // ถ้าเป็น Unknown word → แสดงแค่ "STILL"
+      if (token.isUnknown) {
+        return 'STILL';
+      }
+
+      // ถ้าเป็นคำปกติ → แสดง "คำ (variant: บริบท)"
+      if (widget.glossMap != null) {
+        final wordVariants = widget.glossMap![token.word];
+        if (wordVariants != null && wordVariants is Map) {
+          final context = wordVariants[token.variant];
+          if (context != null) {
+            // return '${token.word} (${token.variant}: $context)';
+            return '${token.variant}: $context';
+          }
+        }
+      }
+      // fallback: ถ้าไม่มีบริบทใน glossMap
+      return '${token.word} (${token.variant})';
+    }
+
+    // fallback ถ้าไม่มี mergedTokens
+    return _currentGloss.isEmpty ? 'STILL' : _currentGloss;
   }
 
   bool get _isCurrentWordUnknown {
@@ -178,8 +212,9 @@ class MotionPlayerState extends State<MotionPlayer> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  // บรรทัดบน: คำภาษาไทยที่สกัดได้ (สีดำทึบ, ขนาดใหญ่)
                   Text(
-                    _currentGloss.isEmpty ? 'STILL' : _currentGloss,
+                    _currentThaiWord.isNotEmpty ? _currentThaiWord : 'รอเล่น...',
                     style: TextStyle(
                       fontSize: 26,
                       fontWeight: FontWeight.bold,
@@ -187,8 +222,9 @@ class MotionPlayerState extends State<MotionPlayer> {
                     ),
                   ),
                   const SizedBox(height: 2),
+                  // บรรทัดล่าง: ท่า motion.json ที่ถูกเล่นจริงๆ พร้อม variant และบริบท (สีเทา, ขนาดเล็ก)
                   Text(
-                    _currentThaiWord.isNotEmpty ? _currentThaiWord : 'รอเล่น...',
+                    _currentVariantDisplay,
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,

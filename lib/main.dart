@@ -3,7 +3,14 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'screens/home_screen.dart';
 
 Future<void> main() async {
-  await dotenv.load(fileName: '.env');
+  // Try loading .env first (for local development)
+  // If not found, fallback to .env.example (for Railway deployment)
+  try {
+    await dotenv.load(fileName: '.env');
+  } catch (e) {
+    print('⚠️ .env not found, loading .env.example');
+    await dotenv.load(fileName: '.env.example');
+  }
   runApp(const MyApp());
 }
 

@@ -3,6 +3,8 @@ import '../models/motion_models.dart';
 import '../widgets/motion_player.dart';
 import '../services/motion_loader.dart';
 import '../utils/vocab_mapper.dart';
+import '../utils/motion_preprocessor.dart';
+import '../utils/preprocessing_config.dart';
 
 class PlayerScreen extends StatefulWidget {
   final List<MotionData> motionDataList;
@@ -71,8 +73,17 @@ class _PlayerScreenState extends State<PlayerScreen> {
         clips.add(clip);
       }
 
+      // สร้าง sequence ต้นฉบับ
+      final rawSequence = MotionSequence(clips: clips);
+
+      // 🆕 Apply preprocessing (Gap Filling + Median + Savitzky-Golay)
+      // เปลี่ยน config ได้ที่นี่: .none, .light, .normal, .heavy
+      const preprocessingConfig = PreprocessingConfig.normal;
+      final preprocessor = MotionPreprocessor(preprocessingConfig);
+      final processedSequence = preprocessor.preprocess(rawSequence);
+
       setState(() {
-        _sequence = MotionSequence(clips: clips);
+        _sequence = processedSequence;
         _isLoading = false;
       });
     } catch (e) {
@@ -617,19 +628,18 @@ class _PlayerScreenState extends State<PlayerScreen> {
               SizedBox(width: isMobile ? 8 : 12),
 
               // ข้อความต้นฉบับ
-              Expanded(
-                child: Text(
-                  widget.originalText,
-                  style: TextStyle(
-                    fontSize: isMobile ? 18 : 26,
-                    fontWeight: FontWeight.w700,
-                    color: const Color(0xFF1E293B),
-                    height: 1.2,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+            Text(
+                widget.originalText,
+                style: TextStyle(
+                  fontSize: isMobile ? 18 : 26,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF1E293B),
+                  height: 1.2,
                 ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
+              
 
               SizedBox(width: isMobile ? 8 : 12),
 
@@ -644,124 +654,118 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
           SizedBox(height: isMobile ? 12 : 20),
 
-          // --- Mobile: แสดง Info Cards, Desktop: แสดง Gloss Chips ---
-          if (isMobile) ...[
-            // Info Cards สำหรับ Mobile
-            _buildInfoCards(),
-            const SizedBox(height: 16),
-          ] else ...[
-            // Gloss Chips สำหรับ Desktop
-            Row(
-              children: [
-                Text(
-                  'ลำดับคำภาษาไทย',
-                  style: TextStyle(
-                    fontSize: isMobile ? 12 : 14,
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFF64748B),
+          // --- Gloss Chips สำหรับทั้ง Mobile และ Desktop ---
+          Row(
+            children: [
+              Text(
+                'ลำดับคำภาษาไทย',
+                style: TextStyle(
+                  fontSize: isMobile ? 12 : 14,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF64748B),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Tooltip(
+                message: 'สีแดงคือคำที่ไม่มีใน Gloss Dictionary\nระบบจะทำการใช้ท่าทาง STILL ให้อัตโนมัติ',
+                padding: const EdgeInsets.all(12),
+                margin: const EdgeInsets.symmetric(horizontal: 20),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.8),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                textStyle: const TextStyle(color: Colors.white, fontSize: 12, height: 1.4),
+                child: Icon(
+                  Icons.info_outline_rounded,
+                  color: Colors.redAccent,
+                  size: isMobile ? 16 : 18,
+                ),
+              ),
+            ],
+          ),
+
+          SizedBox(height: isMobile ? 6 : 8),
+
+          Wrap(
+            spacing: isMobile ? 6 : 8,
+            runSpacing: isMobile ? 6 : 8,
+            children: List.generate(widget.tokens.length, (index) {
+              final token = widget.tokens[index];
+              final isUnknown = token.isUnknown;
+              final displayWord = token.word;
+
+              final currentOriginalIndices = _currentClipIndex < widget.mergedSequence.originalIndices.length
+                  ? widget.mergedSequence.originalIndices[_currentClipIndex]
+                  : <int>[];
+              final isCurrentlyPlaying = currentOriginalIndices.contains(index);
+
+              Color bgColor;
+              Color borderColor;
+              Color textColor;
+              Color numberBgColor;
+
+              if (isUnknown) {
+                bgColor = isCurrentlyPlaying ? Colors.red : Colors.red.shade50;
+                borderColor = Colors.red;
+                textColor = isCurrentlyPlaying ? Colors.white : Colors.red;
+                numberBgColor = Colors.red;
+              } else {
+                bgColor = isCurrentlyPlaying ? Colors.blue.shade600 : Colors.blue.shade50;
+                borderColor = Colors.blue.shade600;
+                textColor = isCurrentlyPlaying ? Colors.white : Colors.blue.shade700;
+                numberBgColor = Colors.blue.shade600;
+              }
+
+              return Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: isMobile ? 10 : 14,
+                  vertical: isMobile ? 6 : 8,
+                ),
+                decoration: BoxDecoration(
+                  color: bgColor,
+                  borderRadius: BorderRadius.circular(isMobile ? 10 : 12),
+                  border: Border.all(
+                    color: borderColor,
+                    width: isCurrentlyPlaying ? 2 : 1,
                   ),
                 ),
-                const SizedBox(width: 8),
-                Tooltip(
-                  message: 'สีแดงคือคำที่ไม่มีใน Gloss Dictionary\nระบบจะทำการใช้ท่าทาง STILL ให้อัตโนมัติ',
-                  padding: const EdgeInsets.all(12),
-                  margin: const EdgeInsets.symmetric(horizontal: 20),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.8),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  textStyle: const TextStyle(color: Colors.white, fontSize: 12, height: 1.4),
-                  child: Icon(
-                    Icons.info_outline_rounded,
-                    color: Colors.redAccent,
-                    size: isMobile ? 16 : 18,
-                  ),
-                ),
-              ],
-            ),
-
-            SizedBox(height: isMobile ? 6 : 8),
-
-            Wrap(
-              spacing: isMobile ? 6 : 8,
-              runSpacing: isMobile ? 6 : 8,
-              children: List.generate(widget.tokens.length, (index) {
-                final token = widget.tokens[index];
-                final isUnknown = token.isUnknown;
-                final displayWord = token.word;
-
-                final currentOriginalIndices = _currentClipIndex < widget.mergedSequence.originalIndices.length
-                    ? widget.mergedSequence.originalIndices[_currentClipIndex]
-                    : <int>[];
-                final isCurrentlyPlaying = currentOriginalIndices.contains(index);
-
-                Color bgColor;
-                Color borderColor;
-                Color textColor;
-                Color numberBgColor;
-
-                if (isUnknown) {
-                  bgColor = isCurrentlyPlaying ? Colors.red : Colors.red.shade50;
-                  borderColor = Colors.red;
-                  textColor = isCurrentlyPlaying ? Colors.white : Colors.red;
-                  numberBgColor = Colors.red;
-                } else {
-                  bgColor = isCurrentlyPlaying ? Colors.blue.shade600 : Colors.blue.shade50;
-                  borderColor = Colors.blue.shade600;
-                  textColor = isCurrentlyPlaying ? Colors.white : Colors.blue.shade700;
-                  numberBgColor = Colors.blue.shade600;
-                }
-
-                return Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: isMobile ? 10 : 14,
-                    vertical: isMobile ? 6 : 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: bgColor,
-                    borderRadius: BorderRadius.circular(isMobile ? 10 : 12),
-                    border: Border.all(
-                      color: borderColor,
-                      width: isCurrentlyPlaying ? 2 : 1,
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: isMobile ? 18 : 20,
-                        height: isMobile ? 18 : 20,
-                        decoration: BoxDecoration(
-                          color: numberBgColor,
-                          borderRadius: BorderRadius.circular(isMobile ? 5 : 6),
-                        ),
-                        child: Center(
-                          child: Text(
-                            '${index + 1}',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: isMobile ? 10 : 11,
-                              fontWeight: FontWeight.bold,
-                            ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: isMobile ? 18 : 20,
+                      height: isMobile ? 18 : 20,
+                      decoration: BoxDecoration(
+                        color: numberBgColor,
+                        borderRadius: BorderRadius.circular(isMobile ? 5 : 6),
+                      ),
+                      child: Center(
+                        child: Text(
+                          '${index + 1}',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: isMobile ? 10 : 11,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
-                      SizedBox(width: isMobile ? 6 : 8),
-                      Text(
-                        displayWord,
-                        style: TextStyle(
-                          color: textColor,
-                          fontWeight: isCurrentlyPlaying ? FontWeight.bold : FontWeight.w600,
-                          fontSize: isMobile ? 12 : 13,
-                        ),
+                    ),
+                    SizedBox(width: isMobile ? 6 : 8),
+                    Text(
+                      displayWord,
+                      style: TextStyle(
+                        color: textColor,
+                        fontWeight: isCurrentlyPlaying ? FontWeight.bold : FontWeight.w600,
+                        fontSize: isMobile ? 12 : 13,
                       ),
-                    ],
-                  ),
-                );
-              }),
-            ),
-            const SizedBox(height: 24),
-          ],
+                    ),
+                  ],
+                ),
+              );
+            }),
+          ),
+
+          const SizedBox(height: 24),
 
           // ================= 2. ส่วน Content (ซ้าย 70% / ขวา 30%) =================
           Expanded(

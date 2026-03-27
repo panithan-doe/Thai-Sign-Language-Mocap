@@ -365,7 +365,7 @@ class MotionPlayerState extends State<MotionPlayer> {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        '${_playbackFps.round()}x', // แสดงเป็นอารมณ์ความเร็วเช่น 30x (30 fps)
+                        '${_playbackFps.round()} FPS', // แสดงเป็นอารมณ์ความเร็วเช่น 30x (30 fps)
                         style: TextStyle(
                           color: Colors.blueGrey.shade700,
                           fontWeight: FontWeight.bold,

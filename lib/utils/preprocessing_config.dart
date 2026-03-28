@@ -33,8 +33,8 @@ class PreprocessingConfig {
   /// Preset: Smooth เบา (responsive)
   static const light = PreprocessingConfig(
     maxGapToFill: 10,
-    medianWindowSize: 5,
-    sgWindowSize: 5,
+    medianWindowSize: 3,
+    sgWindowSize: 3,
     sgPasses: 1,
   );
 
@@ -42,7 +42,7 @@ class PreprocessingConfig {
   static const normal = PreprocessingConfig(
     maxGapToFill: 15,
     medianWindowSize: 7,
-    sgWindowSize: 9,
+    sgWindowSize: 5,
     sgPasses: 2,
   );
 

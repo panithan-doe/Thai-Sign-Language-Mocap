@@ -4,7 +4,7 @@ import '../services/motion_loader.dart';
 import '../utils/vocab_mapper.dart';
 import '../constants/api_constants.dart';
 import 'player_screen.dart';
-import 'add_word_screen.dart';
+import 'dictionary_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -106,22 +106,22 @@ class _HomeScreenState extends State<HomeScreen> {
       floatingActionButton: _isInitialized
           ? FloatingActionButton.extended(
               onPressed: () async {
-                final result = await Navigator.push<bool>(
+                await Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => const AddWordScreen(),
+                    builder: (context) => const DictionaryScreen(),
                   ),
                 );
-                // Refresh vocab เมื่อมีการเพิ่มคำใหม่สำเร็จ
-                if (result == true && mounted) {
+                // Refresh vocab หลังกลับมา (กรณีมีการลบ/แก้ไขคำ)
+                if (mounted) {
                   await _vocabMapper.loadVocab(forceRefresh: true);
                   setState(() {});
                 }
               },
               backgroundColor: const Color(0xFF3B82F6),
-              icon: const Icon(Icons.add, color: Colors.white),
+              icon: const Icon(Icons.book, color: Colors.white),
               label: const Text(
-                'เพิ่มคำศัพท์ใหม่',
+                'คำศัพท์ในระบบ',
                 style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w600,

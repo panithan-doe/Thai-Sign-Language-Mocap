@@ -132,6 +132,99 @@ class BackendService {
     }
   }
 
+  /// ดึง gloss_map ทั้งหมด (คำทั้งหมดพร้อม variants)
+  ///
+  /// Returns:
+  /// Map with keys: total_words, gloss_map
+  /// gloss_map มี structure: {"คำ": {"v1": "บริบท1", "v2": "บริบท2"}, ...}
+  Future<Map<String, dynamic>> getGlossMap() async {
+    final url = Uri.parse('$baseUrl/api/gloss-map');
+
+    try {
+      final response = await http.get(url);
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      } else {
+        throw Exception('Failed to get gloss map: ${response.statusCode}');
+      }
+    } catch (e) {
+      if (e is http.ClientException) {
+        throw Exception('ไม่สามารถเชื่อมต่อ Backend ได้');
+      }
+      rethrow;
+    }
+  }
+
+  /// ลบคำและ variant ที่ระบุ
+  ///
+  /// Parameters:
+  /// - word: คำภาษาไทย (เช่น "เกิน")
+  /// - variant: variant ที่ต้องการลบ (เช่น "v1")
+  ///
+  /// Returns:
+  /// Map with keys: status, message
+  Future<Map<String, dynamic>> deleteWord(String word, String variant) async {
+    final url = Uri.parse('$baseUrl/api/word/$word/$variant');
+
+    try {
+      final response = await http.delete(url);
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      } else {
+        final error = jsonDecode(response.body);
+        throw Exception(error['detail'] ?? 'Unknown error: ${response.statusCode}');
+      }
+    } catch (e) {
+      if (e is http.ClientException) {
+        throw Exception('ไม่สามารถเชื่อมต่อ Backend ได้');
+      }
+      rethrow;
+    }
+  }
+
+  /// อัปเดตบริบทของคำ
+  ///
+  /// Parameters:
+  /// - word: คำภาษาไทย (เช่น "เกิน")
+  /// - variant: variant ที่ต้องการแก้ไข (เช่น "v1")
+  /// - newContext: บริบทใหม่
+  ///
+  /// Returns:
+  /// Map with keys: status, message
+  Future<Map<String, dynamic>> updateWord({
+    required String word,
+    required String variant,
+    required String newContext,
+  }) async {
+    final url = Uri.parse('$baseUrl/api/word/$word/$variant');
+
+    try {
+      final response = await http.put(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'new_context': newContext,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      } else {
+        final error = jsonDecode(response.body);
+        throw Exception(error['detail'] ?? 'Unknown error: ${response.statusCode}');
+      }
+    } catch (e) {
+      if (e is http.ClientException) {
+        throw Exception('ไม่สามารถเชื่อมต่อ Backend ได้');
+      }
+      rethrow;
+    }
+  }
+
   /// เพิ่มคำใหม่พร้อมอัปโหลดไฟล์วิดีโอ
   ///
   /// Parameters:

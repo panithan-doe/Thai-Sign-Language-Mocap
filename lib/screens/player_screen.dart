@@ -78,6 +78,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
       // 🆕 Apply preprocessing (Gap Filling + Median + Savitzky-Golay)
       // เปลี่ยน config ได้ที่นี่: .none, .light, .normal, .heavy
+      // ใช้ .light สำหรับท่าที่มีการเคลื่อนไหวเร็ว (responsive กว่า)
       const preprocessingConfig = PreprocessingConfig.normal;
       final preprocessor = MotionPreprocessor(preprocessingConfig);
       final processedSequence = preprocessor.preprocess(rawSequence);

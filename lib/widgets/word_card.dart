@@ -279,7 +279,7 @@ class _VariantItem extends StatelessWidget {
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                   Text('Variant: $variant'),
-                  Text('บริบท: $context'),
+                  Text('บริบท: ${this.context}'),
                 ],
               ),
             ),

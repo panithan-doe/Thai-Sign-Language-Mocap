@@ -42,7 +42,7 @@ class PreprocessingConfig {
   static const normal = PreprocessingConfig(
     maxGapToFill: 15,
     medianWindowSize: 7,
-    sgWindowSize: 5,
+    sgWindowSize: 9,
     sgPasses: 2,
   );
 

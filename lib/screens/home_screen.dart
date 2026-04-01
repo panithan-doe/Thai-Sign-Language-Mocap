@@ -93,7 +93,12 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     } catch (e) {
       setState(() {
-        _errorMessage = 'เกิดข้อผิดพลาด: $e';
+        // ลบ "Exception: " ออกจากข้อความ error เพื่อให้อ่านง่ายขึ้น
+        String errorMsg = e.toString();
+        if (errorMsg.startsWith('Exception: ')) {
+          errorMsg = errorMsg.substring(11);
+        }
+        _errorMessage = errorMsg;
         _isLoading = false;
       });
     }

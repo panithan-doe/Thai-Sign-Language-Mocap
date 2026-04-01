@@ -76,6 +76,14 @@ class GeminiService {
       print('Validated result: $validatedResult');
       return validatedResult;
     } else {
+      // ตรวจสอบ quota exceeded / rate limit errors
+      final bodyLower = response.body.toLowerCase();
+      if (response.statusCode == 429 ||
+          bodyLower.contains('quota') ||
+          bodyLower.contains('rate limit') ||
+          bodyLower.contains('resource exhausted')) {
+        throw Exception('ระบบมีการใช้งานเกินขีดจำกัดชั่วคราว กรุณาลองใหม่อีกครั้งในภายหลัง');
+      }
       throw Exception('Gemini API error: ${response.statusCode} - ${response.body}');
     }
   }
@@ -120,7 +128,7 @@ String _buildPrompt(String inputText) {
 
   return '''
     คุณคือผู้เชี่ยวชาญด้านภาษามือไทย (Thai Sign Language - TSL) และนักภาษาศาสตร์
-    หน้าที่ของคุณคือรับประโยคภาษาไทยทั่วไป และแปลงเป็น "ลำดับคำ (Gloss)" พร้อมเลือก variant ที่เหมาะสมกับบริบท
+    หน้าที่ของคุณคือรับประโยคภาษาไทยทั่วไป เลือกเฉพาะคำที่สื่อความหมาย และแปลงเป็น "ลำดับคำ (Gloss)" พร้อมเลือก variant ที่เหมาะสมกับบริบท
 
     **กฎการทำงาน (Strict Rules):**
 
@@ -159,11 +167,12 @@ String _buildPrompt(String inputText) {
 
     7. **คำที่ไม่พบ (Unknown Word):** หากหาคำไม่ได้เลย ให้ใส่ "unknown": true
 
-    8. **ประโยคคำถาม** (เช่น หรือยัง) มักจะมีคำว่า ยัง ต่อท้ายประโยคเสมอ เช่น "อาบน้ำหรือยัง" → "อาบน้ำ + ยัง"
+    8. **ประโยคที่มีคำว่า "ยัง":** มักจะเป็นไปได้ 2 กรณี คือประโยคคำถามจะอยู่ท้ายประโยค ("คุณกินข้าวหรือยัง" → ข้าว คุณ กิน ยัง) และประโยคบอกเล่าจะถูกตัดทิ้ง ("คุณยังไม่กินข้าว" → ข้าว คุณ กิน ไม่)
 
     **การเลือก Variant:**
     - แต่ละคำใน JSON มี variant (v1, v2, ...) พร้อมคำอธิบายบริบท
     - **ถ้าบริบทมีความหมาย** (เช่น v1="ฝูงชน", v2="แยกย้ายกันไป") → วิเคราะห์ประโยคแล้วเลือก variant ที่เหมาะสม
+    - **ถ้าบริบทไม่มีความหมาย** (เช่น v1="ท่าที่ 1", v2="ท่าที่ 2") → ให้ใช้ v1
 
     **รูปแบบผลลัพธ์ (Output Format):**
     ตอบกลับเป็น JSON Array ของ Object เท่านั้น:
